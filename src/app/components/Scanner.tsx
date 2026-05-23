@@ -1,11 +1,33 @@
-import { Barcode, QrCode } from 'lucide-react';
-import { StatusPill } from './StatusPill';
+import { useState } from 'react';
+import { Barcode, QrCode, Scan } from 'lucide-react';
 import { VerdictCard } from './VerdictCard';
 import { Badge } from './ui/badge';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { api, type VerdictItem } from '../../lib/api';
 
 export function Scanner() {
+  const [barcodeInput, setBarcodeInput] = useState('');
+  const [isScanning, setIsScanning] = useState(false);
+  const [error, setError] = useState('');
+  const [lastResult, setLastResult] = useState<VerdictItem | null>(null);
+
+  const handleScan = async () => {
+    if (!barcodeInput.trim()) return;
+    setIsScanning(true);
+    setError('');
+    try {
+      const result = await api.checkBarcode(barcodeInput);
+      setLastResult(result);
+      setBarcodeInput('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Scan failed');
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
         <div className="space-y-2">
@@ -13,64 +35,33 @@ export function Scanner() {
           <h1 className="text-2xl leading-tight">
             Scan any product<br />for instant verdict
           </h1>
-          <p style={{ color: 'var(--text-secondary)' }}>Point your camera at the barcode or QR code</p>
+          <p style={{ color: 'var(--text-secondary)' }}>Enter or scan a barcode to verify safety</p>
         </div>
 
         <div className="relative rounded-2xl p-6 overflow-hidden" style={{
           backgroundColor: 'var(--bg-primary)',
           border: '1px solid var(--border-color)'
         }}>
-          <div className="relative aspect-square max-w-sm mx-auto">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center space-y-2">
-                <div className="w-16 h-16 mx-auto rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
-                  <Barcode className="w-8 h-8 text-[#7C3AED]" />
-                </div>
-                <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>Camera viewfinder</p>
-              </div>
+          <div className="space-y-4">
+            <div className="relative">
+              <Input
+                type="text"
+                value={barcodeInput}
+                onChange={(e) => setBarcodeInput(e.target.value)}
+                placeholder="Enter barcode number..."
+                className="pr-20"
+                onKeyDown={(e) => e.key === 'Enter' && handleScan()}
+              />
             </div>
 
-            <svg className="absolute inset-0 w-full h-full pointer-events-none">
-              <rect
-                x="10%"
-                y="10%"
-                width="80%"
-                height="80%"
-                fill="none"
-                stroke="#7C3AED"
-                strokeWidth="3"
-                strokeDasharray="40 200"
-                strokeDashoffset="0"
-                rx="12"
-              >
-                <animate
-                  attributeName="stroke-dashoffset"
-                  from="0"
-                  to="240"
-                  dur="3s"
-                  repeatCount="indefinite"
-                />
-              </rect>
-            </svg>
+            <Button className="w-full" size="lg" onClick={handleScan} disabled={isScanning || !barcodeInput.trim()}>
+              <Scan className="w-5 h-5" />
+              {isScanning ? 'Checking...' : 'Check Barcode'}
+            </Button>
 
-            <div className="absolute top-[10%] left-[10%] w-8 h-8">
-              <div className="absolute top-0 left-0 w-full h-1 bg-[#7C3AED] rounded" />
-              <div className="absolute top-0 left-0 h-full w-1 bg-[#7C3AED] rounded" />
-            </div>
-            <div className="absolute top-[10%] right-[10%] w-8 h-8">
-              <div className="absolute top-0 right-0 w-full h-1 bg-[#7C3AED] rounded" />
-              <div className="absolute top-0 right-0 h-full w-1 bg-[#7C3AED] rounded" />
-            </div>
-            <div className="absolute bottom-[10%] left-[10%] w-8 h-8">
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-[#7C3AED] rounded" />
-              <div className="absolute bottom-0 left-0 h-full w-1 bg-[#7C3AED] rounded" />
-            </div>
-            <div className="absolute bottom-[10%] right-[10%] w-8 h-8">
-              <div className="absolute bottom-0 right-0 w-full h-1 bg-[#7C3AED] rounded" />
-              <div className="absolute bottom-0 right-0 h-full w-1 bg-[#7C3AED] rounded" />
-            </div>
-
-            <div className="absolute left-[10%] right-[10%] top-1/2 -translate-y-1/2 h-0.5 bg-[#7C3AED] opacity-60 animate-[scanLine_2s_ease-in-out_infinite]" />
+            {error && (
+              <p className="text-sm text-red-500 text-center">{error}</p>
+            )}
           </div>
 
           <p className="text-center text-sm mt-4" style={{ color: 'var(--text-tertiary)' }}>
@@ -93,33 +84,12 @@ export function Scanner() {
           </div>
         </div>
 
-        <div className="space-y-3">
-          <h3 style={{ color: 'var(--text-secondary)' }}>Last scanned</h3>
-
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <code className="text-sm font-mono" style={{ color: 'var(--text-secondary)' }}>8901234567890</code>
-                <StatusPill type="caution" label="Caution" />
-              </div>
-              <Button variant="outline" size="sm" className="w-full">
-                Report this barcode
-              </Button>
-            </CardContent>
-          </Card>
-
-          <VerdictCard
-            verdict="Safe"
-            productName="Certified Protein Powder"
-            store="GNC"
-            score={92}
-            reasons={[
-              'NSF Certified for Sport',
-              'No banned substances',
-              'Verified manufacturing standards'
-            ]}
-          />
-        </div>
+        {lastResult && (
+          <div className="space-y-3">
+            <h3 style={{ color: 'var(--text-secondary)' }}>Last scanned</h3>
+            <VerdictCard {...lastResult} />
+          </div>
+        )}
     </div>
   );
 }
