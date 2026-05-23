@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { ArrowLeft, User, Shield, Bell, HelpCircle, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
@@ -5,12 +6,20 @@ import { Card, CardContent } from './ui/card';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Separator } from './ui/separator';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../../lib/auth';
+import { api, type ProfileResponse } from '../../lib/api';
 import darkLogo from '../../imports/dark_mode.png';
 import lightLogo from '../../imports/light_mode.png';
 
 export function Profile() {
   const navigate = useNavigate();
   const { theme } = useTheme();
+  const { user, logout } = useAuth();
+  const [profile, setProfile] = useState<ProfileResponse | null>(null);
+
+  useEffect(() => {
+    api.getProfile().then(setProfile).catch(() => {});
+  }, []);
 
   return (
     <div className="size-full flex flex-col" style={{
@@ -34,21 +43,21 @@ export function Profile() {
         <div className="w-full max-w-md mx-auto p-6 space-y-6">
           <div className="text-center">
             <Avatar className="w-24 h-24 mx-auto mb-4">
-              <AvatarFallback className="text-3xl">JD</AvatarFallback>
+              <AvatarFallback className="text-3xl">{user?.avatarInitials || 'V'}</AvatarFallback>
             </Avatar>
-            <h2 className="text-2xl mb-1">John Doe</h2>
-            <p style={{ color: 'var(--text-secondary)' }}>john.doe@example.com</p>
+            <h2 className="text-2xl mb-1">{profile?.name || user?.name || 'User'}</h2>
+            <p style={{ color: 'var(--text-secondary)' }}>{profile?.email || user?.email || ''}</p>
           </div>
 
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <span style={{ color: 'var(--text-secondary)' }}>Products Scanned</span>
-                <span className="text-2xl text-[#7C3AED]">247</span>
+                <span className="text-2xl text-[#7C3AED]">{profile?.productsScanned ?? 0}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span style={{ color: 'var(--text-secondary)' }}>Safety Warnings</span>
-                <span className="text-2xl text-[#EF4444]">12</span>
+                <span className="text-2xl text-[#EF4444]">{profile?.safetyWarnings ?? 0}</span>
               </div>
             </CardContent>
           </Card>
@@ -91,7 +100,7 @@ export function Profile() {
             </Card>
           </div>
 
-          <Button onClick={() => navigate('/')} variant="destructive" className="w-full" size="lg">
+          <Button onClick={() => { logout(); navigate('/'); }} variant="destructive" className="w-full" size="lg">
             <LogOut className="w-5 h-5" />
             Sign Out
           </Button>
