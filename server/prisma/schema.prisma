@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+
+  scanHistory ScanHistory[]
+  reports     Report[]
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  barcode     String?  @unique
+  url         String?  @unique
+  productName String
+  store       String?
+  verdict     String
+  score       Int
+  reasons     String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  scanHistory ScanHistory[]
+  reports     Report[]
+}
+
+model ScanHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  scannedAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model Report {
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  reason    String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model BlacklistedBarcode {
+  id        String   @id @default(uuid())
+  barcode   String   @unique
+  reason    String
+  createdAt DateTime @default(now())
+}
