@@ -7,12 +7,14 @@ import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Button } from "./ui/button";
 import { Separator } from "./ui/separator";
 import { useTheme } from "../context/ThemeContext";
+import { useAuth } from "../../lib/auth";
 import darkLogo from "../../imports/dark_mode.png";
 import lightLogo from "../../imports/light_mode.png";
 
 export function Home() {
   const navigate = useNavigate();
   const { theme } = useTheme();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"check" | "scan">(
     "check",
   );
@@ -35,7 +37,7 @@ export function Home() {
           onClick={() => navigate("/profile")}
           className="cursor-pointer hover:opacity-80 transition-opacity w-9 h-9"
         >
-          <AvatarFallback>JD</AvatarFallback>
+          <AvatarFallback>{user?.avatarInitials || 'V'}</AvatarFallback>
         </Avatar>
       </header>
 
