@@ -3,15 +3,24 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail, Lock } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { useAuth } from '../../lib/auth';
 import mainLogo from '../../imports/main.png';
 
 export function Login() {
   const navigate = useNavigate();
+  const { login, isLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
-  const handleLogin = () => {
-    navigate('/home');
+  const handleLogin = async () => {
+    try {
+      setError('');
+      await login(email, password);
+      navigate('/home');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Login failed');
+    }
   };
 
   return (
@@ -73,8 +82,12 @@ export function Login() {
               </button>
             </div>
 
-            <Button onClick={handleLogin} className="w-full mb-4" size="lg">
-              Sign In
+            {error && (
+              <p className="text-sm text-red-500 mb-2 text-center">{error}</p>
+            )}
+
+            <Button onClick={handleLogin} className="w-full mb-4" size="lg" disabled={isLoading}>
+              {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
 
             <p className="text-center text-sm" style={{ color: 'var(--text-secondary)' }}>
