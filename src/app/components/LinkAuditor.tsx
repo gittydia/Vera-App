@@ -4,45 +4,13 @@ import { Link } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
-
-const mockRecentChecks = [
-  {
-    verdict: 'Safe' as const,
-    productName: 'Organic Multivitamin Complex',
-    store: 'Amazon',
-    score: 87,
-    reasons: [
-      'FDA-approved facility',
-      'Third-party tested for purity',
-      'Transparent ingredient sourcing'
-    ]
-  },
-  {
-    verdict: 'Caution' as const,
-    productName: 'Weight Loss Tea Blend',
-    store: 'HealthStore',
-    score: 54,
-    reasons: [
-      'Contains undisclosed caffeine levels',
-      'Limited clinical testing data',
-      'Mixed consumer reviews'
-    ]
-  },
-  {
-    verdict: 'High Risk' as const,
-    productName: 'Maximum Power Pills',
-    store: 'OnlineSupplements',
-    score: 23,
-    reasons: [
-      'Banned substances detected',
-      'No quality certifications',
-      'Multiple FDA warnings issued'
-    ]
-  }
-];
+import { api, type VerdictItem } from '../../lib/api';
 
 export function LinkAuditor() {
   const [url, setUrl] = useState('');
+  const [results, setResults] = useState<VerdictItem[]>([]);
+  const [isChecking, setIsChecking] = useState(false);
+  const [error, setError] = useState('');
 
   const handlePaste = async () => {
     try {
@@ -54,6 +22,21 @@ export function LinkAuditor() {
       if (input) {
         input.focus();
       }
+    }
+  };
+
+  const handleCheck = async () => {
+    if (!url.trim()) return;
+    setIsChecking(true);
+    setError('');
+    try {
+      const result = await api.checkLink(url);
+      setResults(prev => [result, ...prev]);
+      setUrl('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Check failed');
+    } finally {
+      setIsChecking(false);
     }
   };
 
@@ -87,21 +70,26 @@ export function LinkAuditor() {
             </Button>
           </div>
 
-          <Button className="w-full" size="lg">
+          <Button className="w-full" size="lg" onClick={handleCheck} disabled={isChecking || !url.trim()}>
             <Link className="w-5 h-5" />
-            Check this product
+            {isChecking ? 'Checking...' : 'Check this product'}
           </Button>
+          {error && (
+            <p className="text-sm text-red-500 text-center">{error}</p>
+          )}
         </div>
       </div>
 
-      <div className="mt-6 space-y-4">
-        <h3 style={{ color: 'var(--text-secondary)' }}>Recent checks</h3>
-        <div className="space-y-3">
-          {mockRecentChecks.map((check, idx) => (
-            <VerdictCard key={idx} {...check} />
-          ))}
+      {results.length > 0 && (
+        <div className="mt-6 space-y-4">
+          <h3 style={{ color: 'var(--text-secondary)' }}>Recent checks</h3>
+          <div className="space-y-3">
+            {results.map((check, idx) => (
+              <VerdictCard key={idx} {...check} />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
