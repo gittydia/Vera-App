@@ -3,16 +3,25 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Mail, Lock, User } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { useAuth } from "../../lib/auth";
 import mainLogo from "../../imports/main.png";
 
 export function Signup() {
   const navigate = useNavigate();
+  const { signup, isLoading } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-  const handleSignup = () => {
-    navigate("/home");
+  const handleSignup = async () => {
+    try {
+      setError("");
+      await signup(name, email, password);
+      navigate("/home");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Signup failed');
+    }
   };
 
   return (
@@ -130,12 +139,17 @@ export function Signup() {
               </div>
             </div>
 
+            {error && (
+              <p className="text-sm text-red-500 mb-2 text-center">{error}</p>
+            )}
+
             <Button
               onClick={handleSignup}
               className="w-full mb-4"
               size="lg"
+              disabled={isLoading}
             >
-              Create Account
+              {isLoading ? 'Creating Account...' : 'Create Account'}
             </Button>
 
             <p
